@@ -1,4 +1,4 @@
-#error Please read the accompanying microbash.pdf before hacking this source code (and removing this line).
+
 /*
  * Micro-bash v2.2
  *
