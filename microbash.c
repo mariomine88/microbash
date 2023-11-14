@@ -89,6 +89,13 @@ void free_command(command_t * const c)
 {
 	assert(c==0 || c->n_args==0 || (c->n_args > 0 && c->args[c->n_args] == 0)); /* sanity-check: if c is not null, then it is either empty (in case of parsing error) or its args are properly NULL-terminated */
 	/*** TO BE DONE START ***/
+	for(int i = 0; i<c->n_args;i++){
+		free(c->args[i]);
+	}
+	free(c->in_pathname);
+	free(c->out_pathname);
+	c->n_args = 0;
+	free(c);
 	/*** TO BE DONE END ***/
 }
 
@@ -96,6 +103,10 @@ void free_line(line_t * const l)
 {
 	assert(l==0 || l->n_commands>=0); /* sanity-check */
 	/*** TO BE DONE START ***/
+	for (int i = 0; i<l->n_commands;i++){
+		free_command(l->commands[i]);
+	} 
+	free(l);
 	/*** TO BE DONE END ***/
 }
 
@@ -206,6 +217,16 @@ check_t check_redirections(const line_t * const l)
 	 * message and return CHECK_FAILED otherwise
 	 */
 	/*** TO BE DONE START ***/
+	for (int i=0; i<l->n_commands; i++){
+		if(l->commands[i]->in_pathname && i!=0){
+			fprintf(stderr, "Parsing error: only the first command of a line can have input-redirection\n");
+			return CHECK_FAILED;
+		}
+		if(l->commands[i]->out_pathname && i!=l->n_commands-1){
+			fprintf(stderr, "Parsing error: only the last command of a line can have output-redirection\n");
+			return CHECK_FAILED;
+		}
+	}
 	/*** TO BE DONE END ***/
 	return CHECK_OK;
 }
@@ -221,6 +242,22 @@ check_t check_cd(const line_t * const l)
 	 * message and return CHECK_FAILED otherwise
 	 */
 	/*** TO BE DONE START ***/
+	for (int i=0; i<l->n_commands; i++){
+		if(strcmp(l->commands[i]->args[0], CD)==0){
+			if(l->n_commands!=1){
+				fprintf(stderr, "Parsing error: command \"cd\" must be the only command of the line\n");
+				return CHECK_FAILED;
+			}
+			if(l->commands[i]->in_pathname || l->commands[i]->out_pathname){
+				fprintf(stderr, "Parsing error: command \"cd\" cannot have I/O redirections\n");
+				return CHECK_FAILED;
+			}
+			if(l->commands[i]->n_args!=2){
+				fprintf(stderr, "Parsing error: command \"cd\" must have only one argument\n");
+				return CHECK_FAILED;
+			}
+		}
+	}
 	/*** TO BE DONE END ***/
 	return CHECK_OK;
 }
@@ -241,6 +278,13 @@ void redirect(int from_fd, int to_fd)
 	 * That is, use dup/dup2/close to make to_fd equivalent to the original from_fd, and then close from_fd
 	 */
 	/*** TO BE DONE START ***/
+	if(from_fd!=NO_REDIR){
+		if (dup2(from_fd, to_fd) == -1) { //dup2 duplica il file descriptor
+            perror("dup2 failed");
+            exit(EXIT_FAILURE);
+        }
+        close(from_fd);
+	}
 	/*** TO BE DONE END ***/
 }
 
@@ -263,6 +307,10 @@ void change_current_directory(char *newdir)
 	 * (printing an appropriate error message if the syscall fails)
 	 */
 	/*** TO BE DONE START ***/
+	if(open(newdir,O_RDWR) == -1){
+		perror("open failed");
+		exit(EXIT_FAILURE);
+	}
 	/*** TO BE DONE END ***/
 }
 
@@ -290,6 +338,11 @@ void execute_line(const line_t * const l)
 			/* Open c->in_pathname and assign the file-descriptor to curr_stdin
 			 * (handling error cases) */
 			/*** TO BE DONE START ***/
+			if((curr_stdin = open(c->in_pathname, O_RDONLY) == -1)){
+				perror("open failed");
+				exit(EXIT_FAILURE);
+			} 
+			//open torna un fd, e lo assegnamo al curr_stdin
 			/*** TO BE DONE END ***/
 		}
 		if (c->out_pathname) {
@@ -297,11 +350,21 @@ void execute_line(const line_t * const l)
 			/* Open c->out_pathname and assign the file-descriptor to curr_stdout
 			 * (handling error cases) */
 			/*** TO BE DONE START ***/
+			if((curr_stdout = open(c->out_pathname, O_WRONLY) == -1)){
+				perror("open failed");
+				exit(EXIT_FAILURE);
+			}//open torna un fd, e lo assegnamo al curr_stdout
 			/*** TO BE DONE END ***/
 		} else if (a != (l->n_commands - 1)) { /* unless we're processing the last command, we need to connect the current command and the next one with a pipe */
 			int fds[2];
 			/* Create a pipe in fds, and set FD_CLOEXEC in both file-descriptor flags */
 			/*** TO BE DONE START ***/
+			if (pipe(fds) == -1) {
+				perror("pipe failed");
+				exit(EXIT_FAILURE);
+			}
+			fcntl(fds[0], F_SETFD, FD_CLOEXEC);
+			fcntl(fds[1], F_SETFD, FD_CLOEXEC);
 			/*** TO BE DONE END ***/
 			curr_stdout = fds[1];
 			next_stdin = fds[0];
@@ -336,6 +399,11 @@ int main()
 		 * The memory area must be allocated (directly or indirectly) via malloc.
 		 */
 		/*** TO BE DONE START ***/
+		pwd = getcwd(NULL, 0);
+		if (pwd == NULL) {
+			perror("getcwd failed");
+			exit(EXIT_FAILURE);
+		}
 		/*** TO BE DONE END ***/
 		pwd = my_realloc(pwd, strlen(pwd) + prompt_suffix_len + 1);
 		strcat(pwd, prompt_suffix);
