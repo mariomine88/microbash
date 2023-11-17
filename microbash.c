@@ -170,6 +170,7 @@ command_t *parse_cmd(char * const cmdstr)
 			if (*tmp=='$') {
 				/* Make tmp point to the value of the corresponding environment variable, if any, or the empty string otherwise */
 				/*** TO BE DONE START ***/
+				tmp = secure_getenv(tmp+1);
 				/*** TO BE DONE END ***/
 			}
 			result->args[result->n_args++] = my_strdup(tmp);
@@ -269,6 +270,7 @@ void wait_for_children()
 	 * Similarly, if a child is killed by a signal, then you should print a message specifying its PID, signal number and signal name.
 	 */
 	/*** TO BE DONE START ***/
+
 	/*** TO BE DONE END ***/
 }
 
@@ -298,6 +300,20 @@ void run_child(const command_t * const c, int c_stdin, int c_stdout)
 	 * (printing error messages in case of failure, obviously)
 	 */
 	/*** TO BE DONE START ***/
+	pid_t child = fork();
+	if (child == -1) {
+		perror("fork failed");
+		exit(EXIT_FAILURE);
+	}
+	if (child == 0) {
+
+		redirect(c_stdin, STDIN_FILENO);
+		redirect(c_stdout, STDOUT_FILENO);
+		if (execvp(c->args[0], c->args) == -1) {
+			perror("execvp failed");
+			exit(EXIT_FAILURE);
+		}
+	}
 	/*** TO BE DONE END ***/
 }
 
@@ -307,7 +323,8 @@ void change_current_directory(char *newdir)
 	 * (printing an appropriate error message if the syscall fails)
 	 */
 	/*** TO BE DONE START ***/
-	if(open(newdir,O_RDWR) == -1){
+
+	if(chdir(newdir) == -1){
 		perror("open failed");
 		exit(EXIT_FAILURE);
 	}
