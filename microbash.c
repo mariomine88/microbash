@@ -281,11 +281,13 @@ void redirect(int from_fd, int to_fd)
 	 */
 	/*** TO BE DONE START ***/
 	if(from_fd!=NO_REDIR){
+		printf("sosno usato redirect");
 		if (dup2(from_fd, to_fd) == -1) { //dup2 duplica il file descriptor
             perror("dup2 failed");
-            exit(EXIT_FAILURE);
         }
-        close(from_fd);
+		if (close(from_fd) == -1) {
+			perror("close failed");
+		}
 	}
 	/*** TO BE DONE END ***/
 }
@@ -326,7 +328,6 @@ void change_current_directory(char *newdir)
 
 	if(chdir(newdir) == -1){
 		perror("open failed");
-		exit(EXIT_FAILURE);
 	}
 	/*** TO BE DONE END ***/
 }
@@ -355,9 +356,9 @@ void execute_line(const line_t * const l)
 			/* Open c->in_pathname and assign the file-descriptor to curr_stdin
 			 * (handling error cases) */
 			/*** TO BE DONE START ***/
-			if((curr_stdin = open(c->in_pathname, O_RDONLY) == -1)){
-				perror("open failed");
-				exit(EXIT_FAILURE);
+			curr_stdin = open(c->in_pathname, O_RDONLY);
+			if(curr_stdin == -1){
+				perror("open input failed");
 			} 
 			//open torna un fd, e lo assegnamo al curr_stdin
 			/*** TO BE DONE END ***/
@@ -367,18 +368,18 @@ void execute_line(const line_t * const l)
 			/* Open c->out_pathname and assign the file-descriptor to curr_stdout
 			 * (handling error cases) */
 			/*** TO BE DONE START ***/
-			if((curr_stdout = open(c->out_pathname, O_WRONLY) == -1)){
-				perror("open failed");
-				exit(EXIT_FAILURE);
+			curr_stdout = open(c->out_pathname, O_WRONLY);
+			if((curr_stdout == -1)){
+				perror("open output failed");
 			}//open torna un fd, e lo assegnamo al curr_stdout
 			/*** TO BE DONE END ***/
 		} else if (a != (l->n_commands - 1)) { /* unless we're processing the last command, we need to connect the current command and the next one with a pipe */
 			int fds[2];
 			/* Create a pipe in fds, and set FD_CLOEXEC in both file-descriptor flags */
 			/*** TO BE DONE START ***/
+			//fds[2] = qu
 			if (pipe(fds) == -1) {
 				perror("pipe failed");
-				exit(EXIT_FAILURE);
 			}
 			fcntl(fds[0], F_SETFD, FD_CLOEXEC);
 			fcntl(fds[1], F_SETFD, FD_CLOEXEC);
@@ -416,10 +417,9 @@ int main()
 		 * The memory area must be allocated (directly or indirectly) via malloc.
 		 */
 		/*** TO BE DONE START ***/
-		pwd = getcwd(NULL, 0);
+		pwd = getcwd(NULL,0);
 		if (pwd == NULL) {
 			perror("getcwd failed");
-			exit(EXIT_FAILURE);
 		}
 		/*** TO BE DONE END ***/
 		pwd = my_realloc(pwd, strlen(pwd) + prompt_suffix_len + 1);
