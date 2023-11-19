@@ -174,6 +174,9 @@ command_t *parse_cmd(char * const cmdstr)
 				/* Make tmp point to the value of the corresponding environment variable, if any, or the empty string otherwise */
 				/*** TO BE DONE START ***/
 				tmp = secure_getenv(tmp+1);
+				if (tmp == NULL) {
+					fprintf(stderr, "Failed to get environment variable\n");
+				}
 				/*** TO BE DONE END ***/
 			}
 			result->args[result->n_args++] = my_strdup(tmp);
@@ -221,12 +224,12 @@ check_t check_redirections(const line_t * const l)
 	 * message and return CHECK_FAILED otherwise
 	 */
 	/*** TO BE DONE START ***/
-	for (int i=0; i<l->n_commands; i++){
-		if(l->commands[i]->in_pathname && i!=0){
+	for (int i=0; i<l->n_commands; i++){ 
+		if(l->commands[i]->in_pathname && i!=0){ //check that only the first command of a line is a input-redirection
 			fprintf(stderr, "Parsing error: only the first command of a line can have input-redirection\n");
 			return CHECK_FAILED;
 		}
-		if(l->commands[i]->out_pathname && i!=l->n_commands-1){
+		if(l->commands[i]->out_pathname && i!=l->n_commands-1){//check that only the last command of a line is a output-redirection
 			fprintf(stderr, "Parsing error: only the last command of a line can have output-redirection\n");
 			return CHECK_FAILED;
 		}
@@ -247,15 +250,19 @@ check_t check_cd(const line_t * const l)
 	 */
 	/*** TO BE DONE START ***/
 	for (int i=0; i<l->n_commands; i++){
+		// If the command is "cd"
 		if(strcmp(l->commands[i]->args[0], CD)==0){
+			// Check if "cd" is the only command in the line
 			if(l->n_commands!=1){
 				fprintf(stderr, "Parsing error: command \"cd\" must be the only command of the line\n");
 				return CHECK_FAILED;
 			}
+			// Check if "cd" command has any I/O redirections
 			if(l->commands[i]->in_pathname || l->commands[i]->out_pathname){
 				fprintf(stderr, "Parsing error: command \"cd\" cannot have I/O redirections\n");
 				return CHECK_FAILED;
 			}
+			// Check if "cd" command has exactly one argument
 			if(l->commands[i]->n_args!=2){
 				fprintf(stderr, "Parsing error: command \"cd\" must have only one argument\n");
 				return CHECK_FAILED;
@@ -273,7 +280,17 @@ void wait_for_children()
 	 * Similarly, if a child is killed by a signal, then you should print a message specifying its PID, signal number and signal name.
 	 */
 	/*** TO BE DONE START ***/
+	// Wait for all child processes to terminate. If a child process exits with a non-zero status or is killed by a signal, print a message.
+	pid_t pid;
+	int status;
 
+	while ((pid = waitpid(-1, &status, 0)) != -1) {
+		if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
+			printf("Child process %d exited with status %d\n", pid, WEXITSTATUS(status));
+		} else if (WIFSIGNALED(status)) {
+			printf("Child process %d was killed by signal %d: %s\n", pid, WTERMSIG(status), strsignal(WTERMSIG(status)));
+		}
+	}
 	/*** TO BE DONE END ***/
 }
 
@@ -283,11 +300,14 @@ void redirect(int from_fd, int to_fd)
 	 * That is, use dup/dup2/close to make to_fd equivalent to the original from_fd, and then close from_fd
 	 */
 	/*** TO BE DONE START ***/
+	// If there is a redirection, duplicate the file descriptor and close the original
 	if(from_fd!=NO_REDIR){
 		printf("sosno usato redirect");
-		if (dup2(from_fd, to_fd) == -1) { //dup2 duplica il file descriptor
-            perror("dup2 failed");
-        }
+		// Duplicate the file descriptor
+		if (dup2(from_fd, to_fd) == -1) {
+			perror("dup2 failed");
+		}
+		// Close the original file descriptor
 		if (close(from_fd) == -1) {
 			perror("close failed");
 		}
@@ -305,20 +325,24 @@ void run_child(const command_t * const c, int c_stdin, int c_stdout)
 	 * (printing error messages in case of failure, obviously)
 	 */
 	/*** TO BE DONE START ***/
+	// Create a child process
 	pid_t child = fork();
 	if (child == -1) {
+		// If fork fails, print an error message and exit
 		perror("fork failed");
 		exit(EXIT_FAILURE);
 	}
 	if (child == 0) {
-
+		// In the child process, redirect standard input and output
 		redirect(c_stdin, STDIN_FILENO);
 		redirect(c_stdout, STDOUT_FILENO);
+		// Replace the current process image with a new one
 		if (execvp(c->args[0], c->args) == -1) {
+			// If execvp fails, print an error message and exit
 			perror("execvp failed");
 			exit(EXIT_FAILURE);
 		}
-	}
+	} 
 	/*** TO BE DONE END ***/
 }
 
@@ -328,7 +352,7 @@ void change_current_directory(char *newdir)
 	 * (printing an appropriate error message if the syscall fails)
 	 */
 	/*** TO BE DONE START ***/
-
+	// Change the current working directory to 'newdir'. If it fails, print an error message.
 	if(chdir(newdir) == -1){
 		perror("open failed");
 	}
@@ -359,11 +383,12 @@ void execute_line(const line_t * const l)
 			/* Open c->in_pathname and assign the file-descriptor to curr_stdin
 			 * (handling error cases) */
 			/*** TO BE DONE START ***/
+			/* we give open the in_pathname and the option to only read,
+			open returns a file descriptor, and we assign it to 'curr_stdin'*/
 			curr_stdin = open(c->in_pathname, O_RDONLY);
 			if(curr_stdin == -1){
 				perror("open input failed");
-			} 
-			//open torna un fd, e lo assegnamo al curr_stdin
+			}
 			/*** TO BE DONE END ***/
 		}
 		if (c->out_pathname) {
@@ -371,16 +396,18 @@ void execute_line(const line_t * const l)
 			/* Open c->out_pathname and assign the file-descriptor to curr_stdout
 			 * (handling error cases) */
 			/*** TO BE DONE START ***/
+			/* we give open the out_pathname and the option to only write,
+			open returns a file descriptor, and we assign it to 'curr_stdout'*/
 			curr_stdout = open(c->out_pathname, O_WRONLY);
 			if((curr_stdout == -1)){
 				perror("open output failed");
-			}//open torna un fd, e lo assegnamo al curr_stdout
+			}
 			/*** TO BE DONE END ***/
 		} else if (a != (l->n_commands - 1)) { /* unless we're processing the last command, we need to connect the current command and the next one with a pipe */
 			int fds[2];
 			/* Create a pipe in fds, and set FD_CLOEXEC in both file-descriptor flags */
 			/*** TO BE DONE START ***/
-			//fds[2] = qu
+			// Create a pipe and set the close-on-exec flag for both file descriptors
 			if (pipe(fds) == -1) {
 				perror("pipe failed");
 			}
@@ -420,6 +447,7 @@ int main()
 		 * The memory area must be allocated (directly or indirectly) via malloc.
 		 */
 		/*** TO BE DONE START ***/
+		// Get the current working directory. If it fails, print an error message.
 		pwd = getcwd(NULL,0);
 		if (pwd == NULL) {
 			perror("getcwd failed");
