@@ -1,4 +1,3 @@
-//mario hi
 /*
  * Micro-bash v2.2
  *
