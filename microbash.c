@@ -89,6 +89,7 @@ void free_command(command_t * const c)
 	assert(c==0 || c->n_args==0 || (c->n_args > 0 && c->args[c->n_args] == 0)); /* sanity-check: if c is not null, then it is either empty (in case of parsing error) or its args are properly NULL-terminated */
 	/*** TO BE DONE START ***/
 	// Free memory using a for loop for each argument and then free the rest and reset the n_args
+
 	for(int i = 0; i<c->n_args;i++){
 		free(c->args[i]);
 	}
@@ -108,6 +109,7 @@ void free_line(line_t * const l)
 		free_command(l->commands[i]);
 	}
 	l->n_commands = 0;
+
 	free(l);
 	/*** TO BE DONE END ***/
 }
@@ -223,6 +225,7 @@ check_t check_redirections(const line_t * const l)
 	 * message and return CHECK_FAILED otherwise
 	 */
 	/*** TO BE DONE START ***/
+
 	for (int i=0; i<l->n_commands; i++){ 
 		if(l->commands[i]->in_pathname && i!=0){ //check that only the first command of a line is a input-redirection
 			fprintf(stderr, "Parsing error: only the first command of a line can have input-redirection\n");
@@ -249,6 +252,7 @@ check_t check_cd(const line_t * const l)
 	 */
 	/*** TO BE DONE START ***/
 	for (int i=0; i<l->n_commands; i++){
+
 		// If the command is "cd"
 		if(strcmp(l->commands[i]->args[0], CD)==0){
 			// Check if "cd" is the only command in the line
