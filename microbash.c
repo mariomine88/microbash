@@ -284,7 +284,7 @@ void wait_for_children()
 	pid_t pid;
 	int status;
 
-	while ((pid = waitpid(-1, &status, 0)) != -1) {
+	while ((pid = wait(&status)) != -1) {
 		if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
 			printf("Child process %d exited with status %d\n", pid, WEXITSTATUS(status));
 		} else if (WIFSIGNALED(status)) {
