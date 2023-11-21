@@ -294,6 +294,10 @@ void wait_for_children()
 			printf("Child process %d was killed by signal %d: %s\n", pid, WTERMSIG(status), strsignal(WTERMSIG(status)));
 		}
 	}
+	if (errno != ECHILD) {
+		printf("choldren killed");
+		fatal_errno("child ");
+		}
 	/*** TO BE DONE END ***/
 }
 
