@@ -173,7 +173,8 @@ command_t *parse_cmd(char * const cmdstr)
 			if (*tmp=='$') {
 				/* Make tmp point to the value of the corresponding environment variable, if any, or the empty string otherwise */
 				/*** TO BE DONE START ***/
-				if ((tmp = secure_getenv(tmp+1)) == NULL) {
+				tmp = secure_getenv(tmp+1);
+				if (tmp == NULL) {
 					tmp = "";
 				}
 				/*** TO BE DONE END ***/
