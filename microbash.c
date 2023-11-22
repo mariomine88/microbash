@@ -109,7 +109,6 @@ void free_line(line_t * const l)
 		free_command(l->commands[i]);
 	}
 	l->n_commands = 0;
-
 	free(l);
 	/*** TO BE DONE END ***/
 }
@@ -174,9 +173,8 @@ command_t *parse_cmd(char * const cmdstr)
 			if (*tmp=='$') {
 				/* Make tmp point to the value of the corresponding environment variable, if any, or the empty string otherwise */
 				/*** TO BE DONE START ***/
-				tmp = secure_getenv(tmp+1);
-				if (tmp == NULL) {
-					fprintf(stderr, "Failed to get environment variable\n");
+				if ((tmp = secure_getenv(tmp+1)) == NULL) {
+					tmp = "";
 				}
 				/*** TO BE DONE END ***/
 			}
@@ -252,7 +250,6 @@ check_t check_cd(const line_t * const l)
 	 */
 	/*** TO BE DONE START ***/
 	for (int i=0; i<l->n_commands; i++){
-
 		// If the command is "cd"
 		if(strcmp(l->commands[i]->args[0], CD)==0){
 			// Check if "cd" is the only command in the line
@@ -309,7 +306,6 @@ void redirect(int from_fd, int to_fd)
 	/*** TO BE DONE START ***/
 	// If there is a redirection, duplicate the file descriptor and close the original
 	if(from_fd!=NO_REDIR){
-		printf("sosno usato redirect");
 		// Duplicate the file descriptor
 		if (dup2(from_fd, to_fd) == -1) {
 			perror("dup2 failed");
@@ -361,7 +357,7 @@ void change_current_directory(char *newdir)
 	/*** TO BE DONE START ***/
 	// Change the current working directory to 'newdir'. If it fails, print an error message.
 	if(chdir(newdir) == -1){
-		perror("open failed");
+		perror("chdir failed");
 	}
 	/*** TO BE DONE END ***/
 }
