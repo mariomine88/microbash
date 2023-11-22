@@ -293,9 +293,9 @@ void wait_for_children()
 		}
 	}
 	if (errno != ECHILD) {
-		printf("choldren killed");
-		fatal_errno("child ");
-		}
+		printf("Children killed");
+		fatal_errno("Child ");
+	}
 	/*** TO BE DONE END ***/
 }
 
