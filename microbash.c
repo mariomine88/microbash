@@ -296,8 +296,7 @@ void wait_for_children()
 		}
 	}
 	if (errno != ECHILD) {
-		printf("Children killed");
-		fatal_errno("Child ");
+		fatal_errno("Child killed");
 	}
 	/*** TO BE DONE END ***/
 }
@@ -335,9 +334,8 @@ void run_child(const command_t * const c, int c_stdin, int c_stdout)
 	// Create a child process
 	pid_t child = fork();
 	if (child == -1) {
-		// If fork fails, print an error message and exit
-		perror("fork failed");
-		exit(EXIT_FAILURE);
+		// If fork fails, fatal_errno
+		fatal_errno("fork failed");
 	}
 	if (child == 0) {
 		// In the child process, redirect standard input and output
@@ -345,9 +343,8 @@ void run_child(const command_t * const c, int c_stdin, int c_stdout)
 		redirect(c_stdout, STDOUT_FILENO);
 		// Replace the current process image with a new one
 		if (execvp(c->args[0], c->args) == -1) {
-			// If execvp fails, print an error message and exit
-			perror("execvp failed");
-			exit(EXIT_FAILURE);
+			// If execvp fails, fatal_errno
+			fatal_errno("execvp failed");
 		}
 	} 
 	/*** TO BE DONE END ***/
