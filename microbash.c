@@ -227,7 +227,6 @@ check_t check_redirections(const line_t * const l)
 	 * message and return CHECK_FAILED otherwise
 	 */
 	/*** TO BE DONE START ***/
-
 	for (int i=0; i<l->n_commands; i++){ 
 		if(l->commands[i]->in_pathname && i!=0){ //check that only the first command of a line is a input-redirection
 			fprintf(stderr, "Parsing error: only the first command of a line can have input-redirection\n");
@@ -359,6 +358,7 @@ void change_current_directory(char *newdir)
 	// Change the current working directory to 'newdir'. If it fails, print an error message.
 	if(chdir(newdir) == -1){
 		perror("chdir failed");
+		return;
 	}
 	/*** TO BE DONE END ***/
 }
@@ -392,6 +392,7 @@ void execute_line(const line_t * const l)
 			curr_stdin = open(c->in_pathname, O_RDONLY);
 			if(curr_stdin == -1){
 				perror("open input failed");
+				return;
 			}
 			/*** TO BE DONE END ***/
 		}
@@ -414,6 +415,7 @@ void execute_line(const line_t * const l)
 			// Create a pipe and set the close-on-exec flag for both file descriptors
 			if (pipe(fds) == -1) {
 				perror("pipe failed");
+				return;
 			}
 			fcntl(fds[0], F_SETFD, FD_CLOEXEC);
 			fcntl(fds[1], F_SETFD, FD_CLOEXEC);
