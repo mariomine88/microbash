@@ -295,7 +295,7 @@ void wait_for_children()
 		}
 	}
 	if (errno != ECHILD) {
-		fatal_errno("Child killed");
+		fatal_errno("No child processes");
 	}
 	/*** TO BE DONE END ***/
 }
